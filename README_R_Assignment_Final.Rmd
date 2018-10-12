@@ -1,0 +1,284 @@
+---
+title: "README_R_Assignment"
+author: "Jen Jaqueth"
+date: "September 29, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Analysis folders
+
+# The working directory should contain the two files,fang_et_al_genotypes.txt and snp_position.txt.   
+# 
+# 
+# The results are written to the results folder, and a results folder is created if one does not exist.
+
+
+### Data Inspection
+
+## In this section, I examined the file sizes, number of columns, number of rows, headers, etc.(I commented them out after I examined the files)
+
+
+
+```{r}
+
+
+if (!require("readr")) install.packages("readr") 
+library(readr)
+if (!require("dplyr")) install.packages("dplyr") 
+library(dplyr)
+if (!require("ggplot2")) install.packages("ggplot2") 
+library(ggplot2)
+if (!require("reshape2")) install.packages("reshape2") 
+library(reshape2)
+
+genotypes <- read_tsv("fang_et_al_genotypes.txt")  
+
+
+#file.info("./data/fang_et_al_genotypes.txt")$size
+#head(genotypes) 
+#tail(genotypes) 
+#dim(genotypes) 
+#nrow(genotypes) 
+#ncol(genotypes) 
+#str(genotypes) 
+#names(genotypes) 
+
+position <- read_tsv("snp_position.txt")
+
+#file.info("./data/snp_position.txt")$size
+#head(position) 
+#tail(position) 
+#dim(position) 
+#nrow(position) 
+#ncol(position) 
+#str(position) 
+#names(position) 
+
+
+```
+
+### Data Processing
+
+## In this section, I manipulated the two files to extract the maize and teosinte data separately and write the data to files by chromosome. 
+
+# First I created a folder called "Jaqueth_Results" in the working directory to write the 40 files
+```{r}
+
+dir.create(("Jaqueth_Results"), showWarnings = FALSE)
+
+```
+
+# Then I separated the marker data by the maize and teosinte individuals
+
+```{r}
+# Filtering marker data by maize & teosinte separately
+
+
+maize <- filter(genotypes, Group == "ZMMIL" | Group == "ZMMLR" | Group == "ZMMMR")
+teosinte <- filter(genotypes, Group == "ZMPBA" | Group == "ZMPIL" | Group == "ZMPJA")
+```
+
+# Then I transposed the marker data files. First I removed the unneeded columns. Then I duplicated the header row. I did this because I could not figure out how to get the header row to transpose along with the marker data.This was the best solution I could find, but I'm positive there's a better way to do this. Last I transposed the marker data.
+
+```{r}
+# Removing unnecssary columns of Sample_ID, JG_OUT, and Group before transposing
+SNP_maize <- maize[ , -1:-3]
+SNP_teosinte <- teosinte[ , -1:-3]
+
+# Duplicates SNP_ID so the SNP_ID header is transposed along with the marker data
+duplicate_header_maize <- colnames(SNP_maize)
+SNP_maize[1, ] <- duplicate_header_maize
+
+duplicate_header_teosinte <- colnames(SNP_teosinte)
+SNP_teosinte[1, ] <- duplicate_header_teosinte
+
+# Transposes marker data files
+transposed_maize <- as.data.frame(t(SNP_maize))
+transposed_teosinte <- as.data.frame(t(SNP_teosinte))
+
+
+```
+
+# Next I created a SNP positions file with only the three necessary columns
+
+```{r}
+
+positions_ready <- position[ ,c(1,3,4)] 
+
+
+```
+
+# Then I merged the SNP positions and marker data files, first checking if both files contain the same SNPs
+
+```{r}
+
+table(positions_ready$SNP_ID %in% transposed_maize$V1)
+maize_full <- merge(positions_ready, transposed_maize, by.x = "SNP_ID", by.y = "V1")
+teosinte_full <- merge(positions_ready, transposed_teosinte, by.x = "SNP_ID", by.y = "V1")
+
+
+```
+
+# The next step was separating the marker data files by chromosomes. I did this using vectorized operations with a for loop.
+# First I pulled out the marker data for each chromosome while ignoring the SNPs located at multiple locations.  
+# Then I sorted by ascending order and wrote those to a file. Then I sorted by descending order and wrote those to a file.
+
+
+```{r}
+
+
+# writes maize chromosomes in ascending order and then descending order
+maize_genome <- 1:10
+for (i in seq_along(maize_genome)) {
+  chromosome <- filter(maize_full, Chromosome == i & Position != "multiple") 
+  # sorts and writes ascending chr
+  chromosome_ascending <- chromosome[order(as.integer(chromosome$Position)),]
+  filename_ascending=paste("./Jaqueth_Results/maize_",i,".txt", sep="")
+  write_tsv(chromosome_ascending, filename_ascending)
+  # sorts, changes ?/? to -/-, and writes descending chr
+  chromosome_descending <- chromosome[order((as.integer(chromosome$Position)), decreasing=TRUE),]
+  chromosome_descending2 <- data.frame(lapply(chromosome_descending, function(x) gsub("\\?","-", x)))
+  filename_descending <- paste("./Jaqueth_Results/maize_",i,"reverse.txt", sep = "")
+   write_tsv(chromosome_descending2, filename_descending)
+}
+
+
+
+
+```
+
+```{r}
+# writes teosinte chromosomes in ascending order and then descending order
+teosinte_genome <- 1:10
+for (i in seq_along(teosinte_genome)) {
+  chromosome <- filter(teosinte_full, Chromosome == i & Position != "multiple") 
+  # sorts and writes ascending chr
+  chromosome_ascending <- chromosome[order(as.integer(chromosome$Position)),]
+  filename_ascending=paste("./Jaqueth_Results/teosinte_",i,".txt", sep="")
+  write_tsv(chromosome_ascending, filename_ascending)
+  # sorts, changes ?/? to -/-, and writes descending chr
+  chromosome_descending <- chromosome[order((as.integer(chromosome$Position)), decreasing=TRUE),]
+  chromosome_descending2 <- data.frame(lapply(chromosome_descending, function(x) gsub("\\?","-", x)))
+  filename_descending <- paste("./Jaqueth_Results/teosinte_",i,"reverse.txt", sep = "")
+   write_tsv(chromosome_descending2, filename_descending)
+}
+```
+
+### Part II: Data Visualizations
+
+
+# 
+
+
+```{r}
+if (!require("readr")) install.packages("readr") 
+library(readr)
+if (!require("dplyr")) install.packages("dplyr") 
+library(dplyr)
+if (!require("ggplot2")) install.packages("ggplot2") 
+library(ggplot2)
+if (!require("reshape2")) install.packages("reshape2") 
+library(reshape2)
+
+
+# first I read in the two files
+genotypes <- read_tsv("fang_et_al_genotypes.txt")  
+position <- read_tsv("snp_position.txt")
+
+```
+
+
+# First I removed the markers with multiple and unknown positions
+# Then I graphed the marker data by chromosome
+
+
+```{r}
+
+Chrfiltered <- filter(position, Chromosome != "unknown" & Chromosome != "multiple")
+
+# prevents chr10 from being plotted after chr1
+Chrfiltered$Chromosome <- factor(Chrfiltered$Chromosome,levels = c("1", "2", "3", "4","5", "6", "7", "8", "9", "10"))
+
+ggplot(Chrfiltered, aes((Chromosome))) + geom_bar() +
+  ggtitle("Number of Markers on each Chromosome") +
+  labs(x="Chromosome",y="Count of Markers")
+```
+
+# Next I graphed the number of members of the groups contributing marker data
+
+```{r}
+ggplot(genotypes, aes((Group))) + geom_bar() +
+  ggtitle("Groups contributing Marker Data") +
+  labs(x="Groups",y="Count of Members") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))  # tilts x-axis labels
+
+```
+
+# In this section I graphed the amount of heterozygosity and missing data by group
+# First I reshaped the position data using the melt function
+# Then I changed the ?/? to NA
+# Then I used case_when to make a "Zygosity" column. I tried really hard to use a vector, but it gave me wrong results. I had to do it a slow way because I couldn't figure out another way.
+
+```{r}
+
+genotypes_melted <- melt(genotypes, id=c("Sample_ID","Group"))
+genotypes_melted2 <- genotypes_melted[genotypes_melted$Group != "TRIPS", ] 
+
+
+# changed the ?/? to NA
+genotypes_melted2 <- data.frame(lapply(genotypes_melted2, function(x) gsub("\\?/\\?","NA", x)))
+
+# This creates a "Zygosity" column describing the allele call
+genotypes_melted2$Zygosity <- case_when(genotypes_melted2$value == "A/A" ~ 'homozygous',
+                                        genotypes_melted2$value == "C/C" ~ 'homozygous',
+                                        genotypes_melted2$value == "G/G" ~ 'homozygous',
+                                        genotypes_melted2$value == "T/T" ~ 'homozygous',
+                                        genotypes_melted2$value == "A/C" ~ 'heterozygous',
+                                        genotypes_melted2$value == "A/G" ~ 'heterozygous',
+                                        genotypes_melted2$value == "A/T" ~ 'heterozygous',
+                                        genotypes_melted2$value == "C/G" ~ 'heterozygous',
+                                        genotypes_melted2$value == "C/T" ~ 'heterozygous',
+                                        genotypes_melted2$value == "G/T" ~ 'heterozygous',
+                                        genotypes_melted2$value == "NA" ~ 'missing',
+                                        TRUE ~ 'missing')
+# This sorts the dataframe by Group then Zygosity
+geno_zygo_sorted <- genotypes_melted2[order(genotypes_melted2$Group, genotypes_melted2$Zygosity),]
+
+# write_tsv(geno_zygo_sorted, "./results/geno_zygo_sorted.txt")  #check intermediary files
+```
+
+# Next I created a barchart of the heterozygous and homozygous alleles
+
+```{r}
+
+# Stacked barplot with multiple groups
+ggplot(geno_zygo_sorted, aes(x=Group, fill=Zygosity)) + geom_bar () +
+  ggtitle("Type of SNP alleles by Group") +
+  labs(x="Groups",y="Count") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))  # tilts x-axis labels
+
+
+```
+# For my third visualization, I decided to plot the allele data for a subset of markers. I picked six markers at random. This type of plot could be used if you want to check the allele frequency of a set of markers.
+
+
+```{r}
+
+
+marker_group <- c("ba1.6", "PZA00610.9", "PZA00241.6", "PZA00391.2", "PZA00499.10", "PZA00517.6")
+marker_alleles <- genotypes_melted[genotypes_melted$variable %in% marker_group, ]
+#row.names(maizegenotypes) <- maizegenotypes[,1]
+
+
+# Stacked barplot of multiple groups
+ggplot(marker_alleles, aes(x=variable, fill=value)) + geom_bar () +
+  ggtitle("Marker allele frequency") +
+  labs(x="Markers",y="Count") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))  # tilts x-axis labels
+
+```
+
