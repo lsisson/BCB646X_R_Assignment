@@ -11,15 +11,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Analysis folders
 
-# The working directory should contain the two files,fang_et_al_genotypes.txt and snp_position.txt.   
-# 
-# 
-# The results are written to the results folder, and a results folder is created if one does not exist.
+The working directory should contain the two files,fang_et_al_genotypes.txt and snp_position.txt.   
+
+The results are written to the results folder, and a results folder is created if one does not exist.
 
 
 ### Data Inspection
 
-## In this section, I examined the file sizes, number of columns, number of rows, headers, etc.(I commented them out after I examined the files)
+In this section, I examined the file sizes, number of columns, number of rows, headers, etc.(I commented them out after I examined the files)
 
 
 
@@ -63,16 +62,16 @@ position <- read_tsv("snp_position.txt")
 
 ### Data Processing
 
-## In this section, I manipulated the two files to extract the maize and teosinte data separately and write the data to files by chromosome. 
+In this section, I manipulated the two files to extract the maize and teosinte data separately and write the data to files by chromosome. 
 
-# First I created a folder called "Jaqueth_Results" in the working directory to write the 40 files
+First I created a folder called "Jaqueth_Results" in the working directory to write the 40 files
 ```{r}
 
 dir.create(("Jaqueth_Results"), showWarnings = FALSE)
 
 ```
 
-# Then I separated the marker data by the maize and teosinte individuals
+Then I separated the marker data by the maize and teosinte individuals
 
 ```{r}
 # Filtering marker data by maize & teosinte separately
@@ -82,7 +81,7 @@ maize <- filter(genotypes, Group == "ZMMIL" | Group == "ZMMLR" | Group == "ZMMMR
 teosinte <- filter(genotypes, Group == "ZMPBA" | Group == "ZMPIL" | Group == "ZMPJA")
 ```
 
-# Then I transposed the marker data files. First I removed the unneeded columns. Then I duplicated the header row. I did this because I could not figure out how to get the header row to transpose along with the marker data.This was the best solution I could find, but I'm positive there's a better way to do this. Last I transposed the marker data.
+Then I transposed the marker data files. First I removed the unneeded columns. Then I duplicated the header row. I did this because I could not figure out how to get the header row to transpose along with the marker data.This was the best solution I could find, but I'm positive there's a better way to do this. Last I transposed the marker data.
 
 ```{r}
 # Removing unnecssary columns of Sample_ID, JG_OUT, and Group before transposing
@@ -103,7 +102,7 @@ transposed_teosinte <- as.data.frame(t(SNP_teosinte))
 
 ```
 
-# Next I created a SNP positions file with only the three necessary columns
+Next I created a SNP positions file with only the three necessary columns
 
 ```{r}
 
@@ -112,7 +111,7 @@ positions_ready <- position[ ,c(1,3,4)]
 
 ```
 
-# Then I merged the SNP positions and marker data files, first checking if both files contain the same SNPs
+Then I merged the SNP positions and marker data files, first checking if both files contain the same SNPs
 
 ```{r}
 
@@ -123,9 +122,9 @@ teosinte_full <- merge(positions_ready, transposed_teosinte, by.x = "SNP_ID", by
 
 ```
 
-# The next step was separating the marker data files by chromosomes. I did this using vectorized operations with a for loop.
-# First I pulled out the marker data for each chromosome while ignoring the SNPs located at multiple locations.  
-# Then I sorted by ascending order and wrote those to a file. Then I sorted by descending order and wrote those to a file.
+The next step was separating the marker data files by chromosomes. I did this using vectorized operations with a for loop.
+First I pulled out the marker data for each chromosome while ignoring the SNPs located at multiple locations.  
+Then I sorted by ascending order and wrote those to a file. Then I sorted by descending order and wrote those to a file.
 
 
 ```{r}
@@ -171,9 +170,6 @@ for (i in seq_along(teosinte_genome)) {
 ### Part II: Data Visualizations
 
 
-# 
-
-
 ```{r}
 if (!require("readr")) install.packages("readr") 
 library(readr)
@@ -192,8 +188,8 @@ position <- read_tsv("snp_position.txt")
 ```
 
 
-# First I removed the markers with multiple and unknown positions
-# Then I graphed the marker data by chromosome
+First I removed the markers with multiple and unknown positions
+Then I graphed the marker data by chromosome
 
 
 ```{r}
@@ -208,7 +204,7 @@ ggplot(Chrfiltered, aes((Chromosome))) + geom_bar() +
   labs(x="Chromosome",y="Count of Markers")
 ```
 
-# Next I graphed the number of members of the groups contributing marker data
+Next I graphed the number of members of the groups contributing marker data
 
 ```{r}
 ggplot(genotypes, aes((Group))) + geom_bar() +
@@ -218,10 +214,10 @@ ggplot(genotypes, aes((Group))) + geom_bar() +
 
 ```
 
-# In this section I graphed the amount of heterozygosity and missing data by group
-# First I reshaped the position data using the melt function
-# Then I changed the ?/? to NA
-# Then I used case_when to make a "Zygosity" column. I tried really hard to use a vector, but it gave me wrong results. I had to do it a slow way because I couldn't figure out another way.
+In this section I graphed the amount of heterozygosity and missing data by group
+First I reshaped the position data using the melt function
+Then I changed the ?/? to NA
+Then I used case_when to make a "Zygosity" column. I tried really hard to use a vector, but it gave me wrong results. I had to do it a slow way because I couldn't figure out another way.
 
 ```{r}
 
@@ -251,7 +247,7 @@ geno_zygo_sorted <- genotypes_melted2[order(genotypes_melted2$Group, genotypes_m
 # write_tsv(geno_zygo_sorted, "./results/geno_zygo_sorted.txt")  #check intermediary files
 ```
 
-# Next I created a barchart of the heterozygous and homozygous alleles
+Next I created a barchart of the heterozygous and homozygous alleles
 
 ```{r}
 
@@ -263,7 +259,7 @@ ggplot(geno_zygo_sorted, aes(x=Group, fill=Zygosity)) + geom_bar () +
 
 
 ```
-# For my third visualization, I decided to plot the allele data for a subset of markers. I picked six markers at random. This type of plot could be used if you want to check the allele frequency of a set of markers.
+For my third visualization, I decided to plot the allele data for a subset of markers. I picked six markers at random. This type of plot could be used if you want to check the allele frequency of a set of markers.
 
 
 ```{r}
