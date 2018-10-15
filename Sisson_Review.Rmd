@@ -1,0 +1,24 @@
+---
+title: "Sisson_Review"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Assignment Review
+
+### Your code looks really good and runs perfectly for me. I believe you didn't need to worry about the header names when transposing the genotype data because the SNP names would have been the row names. You can then designate the row names during merging with index '0' and once they are joined, the formatting will be taken care of. 
+
+### I really like your for loop for organizing the data by ascending and descending positions and for writing the files. It's well done.
+
+### The graph titled "Number of Makers on Each Chromosome" looks good. I like that the chromosomes are ordered properly.
+
+### The graph titled "Groups contributing Marker Data" also looks good. Some color for the groups could help the graph look a little better but otherwise, it's good.
+
+### I really like how you did the "Type of SNP alleles by Group". I think the colors really help differentiate each group better. 
+
+### The "Marker Allele Frequency" graph is really neat! I didn't even think to look at it that way and I think it looks really good. 
+
+### Overall, I think your code looks really good. Good job! 
